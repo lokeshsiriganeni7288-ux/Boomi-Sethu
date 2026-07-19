@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from "react";
-import { X, Send, Phone, MessageCircle, Mail } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { Send, Phone, MessageCircle, Mail } from "lucide-react";
+
+const ENQUIRY_SUBMITTED_KEY = "enquirySubmitted";
 
 function EnquiryModal() {
-  // 1. Control modal open state with the 10s timer
+  const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
-
-  // 2. Manage form states dynamically
   const [formData, setFormData] = useState({
     name: "",
     phone: "",
@@ -21,17 +22,43 @@ function EnquiryModal() {
     email: "infrabuild.co@gmail.com",
   };
 
-  // Google Apps Script web app URL (must end with /exec once — not duplicated)
   const APPS_SCRIPT_URL =
     "https://script.google.com/macros/s/AKfycbxZG7waQeGJQGPvqVtMw9EQFXRr3c83YX5t8q5UpNpj7-gZD4t9yyQRW2gsh-ay6Fzl/exec";
 
   useEffect(() => {
+    // Don't show again after a successful submission
+    if (sessionStorage.getItem(ENQUIRY_SUBMITTED_KEY) === "true") {
+      return;
+    }
+
     const timer = setTimeout(() => {
       setIsOpen(true);
-    }, 10000); // Opens automatically after 10 seconds
+    }, 10000);
 
     return () => clearTimeout(timer);
   }, []);
+
+  // Block Escape / body scroll while the required enquiry is open
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    const blockEscape = (e) => {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+    };
+
+    window.addEventListener("keydown", blockEscape, true);
+
+    return () => {
+      document.body.style.overflow = prevOverflow;
+      window.removeEventListener("keydown", blockEscape, true);
+    };
+  }, [isOpen]);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -41,14 +68,9 @@ function EnquiryModal() {
     e.preventDefault();
 
     setLoading(true);
-
-    setStatus({
-      type: "",
-      message: "",
-    });
+    setStatus({ type: "", message: "" });
 
     try {
-      // URL-encoded body avoids CORS preflight; Apps Script reads e.parameter
       const body = new URLSearchParams({
         name: formData.name,
         phone: formData.phone,
@@ -56,17 +78,17 @@ function EnquiryModal() {
         message: formData.message,
       });
 
-      // mode: "no-cors" is required for Google Apps Script from the browser;
-      // the response is opaque, but the row is still written to the sheet.
       await fetch(APPS_SCRIPT_URL, {
         method: "POST",
         mode: "no-cors",
         body,
       });
 
+      sessionStorage.setItem(ENQUIRY_SUBMITTED_KEY, "true");
+
       setStatus({
         type: "success",
-        message: "Thank you! Submitted successfully.",
+        message: "Thank you! Submitted successfully. Redirecting...",
       });
 
       setFormData({
@@ -75,12 +97,18 @@ function EnquiryModal() {
         email: "",
         message: "",
       });
+
+      // Brief success message, then close and go home
+      setTimeout(() => {
+        setIsOpen(false);
+        navigate("/");
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      }, 800);
     } catch (error) {
       console.error(error);
-
       setStatus({
         type: "error",
-        message: "Submission failed.",
+        message: "Submission failed. Please try again.",
       });
     } finally {
       setLoading(false);
@@ -90,32 +118,29 @@ function EnquiryModal() {
   if (!isOpen) return null;
 
   return (
-    // Backdrop blur / dim overlay
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
-      {/* Modal Card */}
-      <div className="relative w-full max-w-md overflow-hidden bg-white rounded-2xl shadow-2xl border border-gray-100 transform transition-all scale-100">
-        {/* Close Button */}
-        <button
-          onClick={() => setIsOpen(false)}
-          className="absolute top-4 right-4 text-white/80 hover:text-white hover:bg-white/10 p-1.5 rounded-xl z-10 transition-all"
-        >
-          <X size={20} />
-        </button>
-
-        {/* Premium Real Estate Header */}
+    <div
+      className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="enquiry-title"
+      // Backdrop clicks do nothing — form must be submitted to dismiss
+      onClick={(e) => e.stopPropagation()}
+    >
+      <div
+        className="relative w-full max-w-md overflow-hidden bg-white rounded-2xl shadow-2xl border border-gray-100 transform transition-all scale-100"
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="bg-gradient-to-br from-blue-600 to-indigo-700 p-7 text-white">
-          <h2 className="text-2xl font-bold tracking-tight">
+          <h2 id="enquiry-title" className="text-2xl font-bold tracking-tight">
             Find Your Perfect Home
           </h2>
           <p className="text-blue-100 mt-1 text-sm opacity-90">
-            Our property experts are ready to assist you.
+            Please fill in your details to continue browsing.
           </p>
         </div>
 
-        {/* Form Content */}
         <div className="p-6">
           <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Success/Error Alert Bar */}
             {status.message && (
               <div
                 className={`p-3 rounded-xl text-xs font-semibold ${
@@ -128,7 +153,6 @@ function EnquiryModal() {
               </div>
             )}
 
-            {/* Full Name Input */}
             <div className="space-y-1">
               <label className="block text-[11px] font-bold text-gray-500 uppercase tracking-wider">
                 Full Name
@@ -144,7 +168,6 @@ function EnquiryModal() {
               />
             </div>
 
-            {/* Phone Number Input */}
             <div className="space-y-1">
               <label className="block text-[11px] font-bold text-gray-500 uppercase tracking-wider">
                 Phone Number
@@ -160,7 +183,6 @@ function EnquiryModal() {
               />
             </div>
 
-            {/* Email Address Input */}
             <div className="space-y-1">
               <label className="block text-[11px] font-bold text-gray-500 uppercase tracking-wider">
                 Email Address
@@ -176,7 +198,6 @@ function EnquiryModal() {
               />
             </div>
 
-            {/* Optional message context field */}
             <div className="space-y-1">
               <label className="block text-[11px] font-bold text-gray-500 uppercase tracking-wider">
                 Message / Requirements
@@ -184,14 +205,14 @@ function EnquiryModal() {
               <textarea
                 name="message"
                 rows="2"
+                required
                 value={formData.message}
                 onChange={handleChange}
-                placeholder="I'm looking for a 2BND/3BHK..."
+                placeholder="I'm looking for a 2BHK/3BHK..."
                 className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl text-gray-800 placeholder-gray-400 focus:outline-none focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10 transition-all text-sm resize-none"
               />
             </div>
 
-            {/* Submit Button */}
             <button
               type="submit"
               disabled={isLoading}
@@ -226,14 +247,12 @@ function EnquiryModal() {
             </button>
           </form>
 
-          {/* Quick Connect Section */}
           <div className="mt-6 pt-5 border-t border-gray-100">
             <p className="text-center text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3">
               Or Connect Directly
             </p>
 
             <div className="flex justify-between gap-3">
-              {/* WhatsApp */}
               <a
                 href={`https://wa.me/${contactInfo.whatsapp}?text=I'm interested in your property listings.`}
                 target="_blank"
@@ -249,7 +268,6 @@ function EnquiryModal() {
                 </span>
               </a>
 
-              {/* Call */}
               <a
                 href={`tel:${contactInfo.phone}`}
                 className="flex-1 flex flex-col items-center justify-center py-2.5 px-2 rounded-xl border border-gray-100 hover:bg-blue-50 hover:border-blue-200 transition-all group"
@@ -263,7 +281,6 @@ function EnquiryModal() {
                 </span>
               </a>
 
-              {/* Email */}
               <a
                 href={`mailto:${contactInfo.email}`}
                 className="flex-1 flex flex-col items-center justify-center py-2.5 px-2 rounded-xl border border-gray-100 hover:bg-purple-50 hover:border-purple-200 transition-all group"

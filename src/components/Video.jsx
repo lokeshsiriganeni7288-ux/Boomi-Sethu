@@ -1,12 +1,19 @@
-import React from 'react'
-import realestatevideo from '../assets/video/realestatevideo.mp4'
+import React from "react";
+import realestatevideo from "../assets/video/realestatevideo.mp4";
 
 const Video = () => {
   return (
-    <div>
-        <video src={realestatevideo} autoPlay loop muted className='w-screen h-screen object-cover' />
+    <div className="absolute inset-0 overflow-hidden">
+      <video
+        src={realestatevideo}
+        autoPlay
+        loop
+        muted
+        playsInline
+        className="hero-video w-full h-full object-cover"
+      />
     </div>
-  )
-}
+  );
+};
 
-export default Video
+export default Video;

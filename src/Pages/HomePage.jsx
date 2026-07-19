@@ -1,5 +1,4 @@
 import React from "react";
-import { useState } from "react";
 import Navbar from "../components/Navbar";
 // import Footer from '../components/Footer'
 import Hero from "../sections/Home/Hero";
@@ -11,7 +10,6 @@ import Contact from "../sections/Contact/Contact";
 import { Helmet } from "react-helmet-async";
 import EnquiryModal from "../components/EnquiryModal";
 const HomePage = () => {
-  const [showModal, setModal] = useState(true);
   return (
     <div>
       <EnquiryModal />
