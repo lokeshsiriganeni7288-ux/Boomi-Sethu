@@ -4,7 +4,7 @@ import Navbar from "../components/Navbar";
 // import Footer from '../components/Footer'
 import Hero from "../sections/Home/Hero";
 import Location from "../components/Location";
-import About from "../Sections/About/About";
+import About from "../sections/About/About";
 import Project from "../sections/Projects/Project";
 import Testimonials from "../sections/Testimonials/Testimonials";
 import Contact from "../sections/Contact/Contact";
