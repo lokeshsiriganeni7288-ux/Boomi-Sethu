@@ -1,9 +1,14 @@
 import React from "react";
+import { Building2, ChevronDown } from "lucide-react";
 import Video from "../../components/Video";
 
 const Hero = () => {
   const scrollTo = (id) => {
-    document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
+    const el = document.getElementById(id);
+    if (!el) return;
+    const navOffset = 72;
+    const top = el.getBoundingClientRect().top + window.scrollY - navOffset;
+    window.scrollTo({ top, behavior: "smooth" });
   };
 
   return (
@@ -68,11 +73,25 @@ const Hero = () => {
         </div>
       </div>
 
-      <div className="hero-scroll-indicator absolute bottom-10 left-1/2 -translate-x-1/2">
-        <div className="w-6 h-10 border-2 border-white/30 rounded-full flex justify-center p-1.5">
-          <div className="hero-scroll-dot w-1.5 h-2.5 bg-white rounded-full" />
-        </div>
-      </div>
+      {/* Real-estate explore cue — scrolls to projects */}
+      <button
+        type="button"
+        onClick={() => scrollTo("projects")}
+        className="hero-explore-cue absolute bottom-8 left-1/2 -translate-x-1/2 z-10 group flex flex-col items-center gap-2 text-white/80 hover:text-white transition-colors cursor-pointer"
+        aria-label="Explore our properties"
+      >
+        <span className="flex items-center gap-2 rounded-full border border-white/25 bg-white/10 backdrop-blur-md px-4 py-2 group-hover:bg-white/20 group-hover:border-white/40 transition-all">
+          <Building2 size={16} className="text-blue-300" />
+          <span className="text-[11px] font-semibold tracking-[0.18em] uppercase">
+            Explore Properties
+          </span>
+        </span>
+        <ChevronDown
+          size={22}
+          strokeWidth={2}
+          className="hero-explore-chevron text-white/70 group-hover:text-white"
+        />
+      </button>
     </section>
   );
 };
