@@ -1,17 +1,69 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useRef } from "react";
 import { Link, useParams } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import { MapPin } from "lucide-react";
 import Navbar from "../components/Navbar";
 import { projects } from "../ProjectsData";
+import {
+  getSessionUserData,
+  sendToAppsScript,
+  SHEETS,
+} from "../utils/appsScript";
+
+// Survives React StrictMode remounts (refs alone get reset)
+const sentProjectInterests = new Set();
 
 const ProjectDetail = () => {
   const { id } = useParams();
   const project = projects.find((p) => p.id === id);
+  const sendingRef = useRef(false);
 
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [id]);
+
+  // Send user + project to Apps Script once per project (prevents duplicate rows)
+  useEffect(() => {
+    if (!project || !id) return;
+
+    // Block StrictMode double-invoke + repeat visits in the same session
+    const guardKey = `project_interest_${id}`;
+    if (
+      sentProjectInterests.has(guardKey) ||
+      sessionStorage.getItem(guardKey)
+    ) {
+      return;
+    }
+    if (sendingRef.current) return;
+
+    sendingRef.current = true;
+    sentProjectInterests.add(guardKey);
+    sessionStorage.setItem(guardKey, "true");
+
+    const userData = getSessionUserData();
+    const payload = {
+      type: "project_click",
+      sheetName: SHEETS.PROJECT_INTERESTS,
+      name: userData?.name || "",
+      phone: userData?.phone || "",
+      email: userData?.email || "",
+      message: userData?.message || "",
+      projectId: project.id || "",
+      projectTitle: project.title || "",
+      projectCategory: project.category || "",
+      projectLocation: project.location || "",
+    };
+
+    console.log("Sending to Google Sheet:", payload);
+
+    sendToAppsScript(payload).catch((error) => {
+      console.error("Failed to save project interest:", error);
+      // Allow retry if the request failed
+      sentProjectInterests.delete(guardKey);
+      sessionStorage.removeItem(guardKey);
+      sendingRef.current = false;
+    });
+  }, [id, project]);
 
   if (!project) {
     return (

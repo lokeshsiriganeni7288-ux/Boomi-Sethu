@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Send, Phone, MessageCircle, Mail } from "lucide-react";
+import { sendToAppsScript, SHEETS } from "../utils/appsScript";
 
 const ENQUIRY_SUBMITTED_KEY = "enquirySubmitted";
 
@@ -21,9 +22,6 @@ function EnquiryModal() {
     whatsapp: "7288952375",
     email: "infrabuild.co@gmail.com",
   };
-
-  const APPS_SCRIPT_URL =
-    "https://script.google.com/macros/s/AKfycbxZG7waQeGJQGPvqVtMw9EQFXRr3c83YX5t8q5UpNpj7-gZD4t9yyQRW2gsh-ay6Fzl/exec";
 
   useEffect(() => {
     // Don't show again after a successful submission
@@ -71,20 +69,17 @@ function EnquiryModal() {
     setStatus({ type: "", message: "" });
 
     try {
-      const body = new URLSearchParams({
+      await sendToAppsScript({
+        type: "enquiry",
+        sheetName: SHEETS.ENQUIRIES,
         name: formData.name,
         phone: formData.phone,
         email: formData.email,
         message: formData.message,
       });
 
-      await fetch(APPS_SCRIPT_URL, {
-        method: "POST",
-        mode: "no-cors",
-        body,
-      });
-
       sessionStorage.setItem(ENQUIRY_SUBMITTED_KEY, "true");
+      sessionStorage.setItem("sessionFormData", JSON.stringify(formData));
 
       setStatus({
         type: "success",
@@ -98,7 +93,6 @@ function EnquiryModal() {
         message: "",
       });
 
-      // Brief success message, then close and go home
       setTimeout(() => {
         setIsOpen(false);
         navigate("/");

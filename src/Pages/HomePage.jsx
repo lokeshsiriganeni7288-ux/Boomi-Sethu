@@ -4,6 +4,7 @@ import Navbar from "../components/Navbar";
 import Hero from "../sections/Home/Hero";
 import Location from "../components/Location";
 import About from "../sections/About/About";
+import Stats from "../sections/Stats/Stats";
 import Project from "../sections/Projects/Project";
 import Testimonials from "../sections/Testimonials/Testimonials";
 import Contact from "../sections/Contact/Contact";
@@ -29,7 +30,9 @@ const HomePage = () => {
       </Helmet>
       <Navbar />
       <Hero />
+      <Stats />
       <About />
+
       <Project />
       <Location />
       <Testimonials />
